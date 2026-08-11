@@ -1,1 +1,0 @@
-if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/jiangjiang-home-frontend/sw.js', { scope: '/jiangjiang-home-frontend/' })})}
