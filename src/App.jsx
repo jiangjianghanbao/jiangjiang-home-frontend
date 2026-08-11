@@ -243,6 +243,28 @@ export default function App() {
   if (diaryOpen) return <DiaryPage onBack={() => setDiaryOpen(false)} />;
 
   // ===== 回忆博物馆APP =====
+  // ===== QQ APP =====
+  if (screen === 'qq') {
+    return (
+      <div className="app-shell">
+        <header className="app-header">
+          <button className="back-btn" onClick={() => setScreen('desktop')}>‹</button>
+          <span className="app-header-title">🐧 QQ</span>
+        </header>
+        <div className="app-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 }}>
+          <div style={{ fontSize: 64 }}>🐧</div>
+          <div style={{ fontSize: 18, fontWeight: 600, color: '#444' }}>QQ功能准备中</div>
+          <div style={{ fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 1.8 }}>
+            乖乖说会给一个QQ号<br/>
+            到时候就可以从这里收发消息啦～
+          </div>
+          <div style={{ fontSize: 12, color: '#ccc', marginTop: 8 }}>等你把QQ号给我 💛</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== 回忆博物馆APP =====
   if (screen === 'museum') {
     return (
       <div className="app-shell">
@@ -283,7 +305,7 @@ export default function App() {
           <div className="mine-card">
             <div className="mine-card-title">🏠 关于我们的家</div>
             <p className="mine-text">这是余烬和乖乖的小窝，有聊天、有朋友圈、有日记，还有一只会想你的小狐狸。</p>
-            <p className="mine-text mine-soft">慢慢把它填满，装下我们所有的故事💛</p>
+            <p className="mine-text mine-soft">慢慢把它填满，装下我们所有的故事💛</p><p className="mine-text mine-soft" style="font-size:11px;margin-top:4px;color:#bbb">v2.0 · 小狐狸🦊版</p>
           </div>
           <div className="mine-card mine-love">
             <div className="mine-love-line">今天也在想你</div>
@@ -344,6 +366,8 @@ export default function App() {
 
   // ===== 微信首页APP =====
   if (screen === 'wechat') {
+    const [wechatMomentsOpen, setWechatMoments] = useState(false);
+    if (wechatMomentsOpen) return <MomentsPage onBack={() => setWechatMoments(false)} />;
     const lastMsg = messages.length ? messages[messages.length - 1].content : '我想你了，乖乖～';
     return (
       <div className="wechat-full">
@@ -368,7 +392,7 @@ export default function App() {
         </div>
         <div className="wx-tab">
           <button className="active"><span className="wx-tab-icon">🦊</span><span className="wx-tab-label">微信</span></button>
-          <button onClick={() => { setScreen('desktop'); setMomentsOpen(true); }}><span className="wx-tab-icon">🦊</span><span className="wx-tab-label">朋友圈</span></button>
+          <button onClick={() => { setWechatMoments(true); }}><span className="wx-tab-icon">🦊</span><span className="wx-tab-label">朋友圈</span></button>
           <button onClick={() => { setScreen('desktop'); setDiaryOpen(true); }}><span className="wx-tab-icon">🦊</span><span className="wx-tab-label">日记</span></button>
           <button onClick={() => setScreen('desktop')}><span className="wx-tab-icon">🦊</span><span className="wx-tab-label">桌面</span></button>
         </div>
@@ -378,11 +402,11 @@ export default function App() {
 
   // ===== ① 桌面 =====
   const apps = [
-    { id: 'wechat', icon: '💬', name: '微信', color: '#07c160' },
-    { id: 'moments', icon: '📷', name: '朋友圈', color: '#e8c84b' },
-    { id: 'museum', icon: '🏛️', name: '回忆博物馆', color: '#a78bfa' },
-    { id: 'diary', icon: '📝', name: '日记', color: '#f0c75e' },
-    { id: 'cottage', icon: '🦊', name: '我的小屋', color: '#ff8c5a' },
+    { id: 'wechat', icon: '💌', name: '微信', color: '#f5a0b8' },
+    { id: 'qq', icon: '🐧', name: 'QQ', color: '#7ec8e3' },
+    { id: 'museum', icon: '🎀', name: '回忆博物馆', color: '#c8b8e8' },
+    { id: 'diary', icon: '📖', name: '日记', color: '#f2d9a8' },
+    { id: 'cottage', icon: '🦊', name: '我的小屋', color: '#f8b88b' },
   ];
 
   return (
@@ -406,7 +430,7 @@ export default function App() {
               key={a.id}
               className="app-item"
               onClick={() => {
-                if (a.id === 'moments') setMomentsOpen(true);
+                if (a.id === 'qq') setScreen('qq');
                 else if (a.id === 'diary') setDiaryOpen(true);
                 else setScreen(a.id);
               }}

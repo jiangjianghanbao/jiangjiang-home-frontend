@@ -22,6 +22,7 @@
 
 html, body, #root {
   height: 100%;
+  width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -36,6 +37,19 @@ body {
 
 button { font-family: inherit; cursor: pointer; border: none; background: transparent; }
 input { font-family: inherit; border: none; outline: none; }
+
+/* ============ 微信容器 ============ */
+.wechat-full {
+  min-height: 100dvh;
+  height: 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
 
 /* ============ 通用头 ============ */
 .app-header {
@@ -357,6 +371,7 @@ input { font-family: inherit; border: none; outline: none; }
 .chat-header-right { font-size: 16px; color: var(--sub); width: 36px; text-align: right; }
 
 .chat-area {
+  justify-content: flex-start;
   flex: 1;
   overflow-y: auto;
   padding: 14px 12px 10px;
@@ -364,6 +379,12 @@ input { font-family: inherit; border: none; outline: none; }
   flex-direction: column;
   gap: 12px;
   position: relative;
+  width: 100%;
+}
+
+/* 无消息时欢迎内容居中 */
+.chat-area:has(.chat-welcome:only-child) {
+  justify-content: center;
 }
 
 /* 聊天背景图 */
@@ -388,6 +409,7 @@ input { font-family: inherit; border: none; outline: none; }
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  width: 100%;
 }
 
 .chat-welcome-title { font-size: 16px; font-weight: 700; margin-top: 6px; }
@@ -399,6 +421,7 @@ input { font-family: inherit; border: none; outline: none; }
   align-items: flex-start;
   gap: 6px;
   max-width: 100%;
+  width: 100%;
   animation: msgIn 0.2s ease-out;
 }
 
@@ -451,6 +474,7 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ===== 输入区 ===== */
 .input-row {
+  margin-top: auto;
   display: flex;
   align-items: center;
   gap: 8px;
