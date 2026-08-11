@@ -346,17 +346,20 @@ input { font-family: inherit; border: none; outline: none; }
 .wx-tab-icon { font-size: 22px; line-height: 1.2; }
 .wx-tab-label { font-size: 10px; }
 
-/* ============ ③ 聊天页 ============ */
+/* ============ 聊天页（固定输入框在底部） ============ */
 .chat-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 10px;
+  padding: 10px;
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .chat-header-user {
@@ -371,15 +374,15 @@ input { font-family: inherit; border: none; outline: none; }
 .chat-header-right { font-size: 16px; color: var(--sub); width: 36px; text-align: right; }
 
 .chat-area {
-  justify-content: flex-start;
   flex: 1;
   overflow-y: auto;
-  padding: 14px 12px 10px;
+  padding: 14px 12px 84px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: relative;
   width: 100%;
+  justify-content: flex-start;
 }
 
 /* 无消息时欢迎内容居中 */
@@ -415,7 +418,7 @@ input { font-family: inherit; border: none; outline: none; }
 .chat-welcome-title { font-size: 16px; font-weight: 700; margin-top: 6px; }
 .chat-welcome-sub { font-size: 13px; color: var(--sub); }
 
-/* 聊天气泡 - 简约风格 */
+/* 聊天气泡 */
 .msg {
   display: flex;
   align-items: flex-start;
@@ -472,9 +475,12 @@ input { font-family: inherit; border: none; outline: none; }
   100% { opacity: 0.2; }
 }
 
-/* ===== 输入区 ===== */
+/* ===== 输入区 - 固定在底部 ===== */
 .input-row {
-  margin-top: auto;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -483,7 +489,7 @@ input { font-family: inherit; border: none; outline: none; }
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 0.5px solid var(--border);
-  flex-shrink: 0;
+  z-index: 20;
 }
 
 .input-row input {
@@ -518,6 +524,7 @@ input { font-family: inherit; border: none; outline: none; }
 }
 .input-row button:active { transform: scale(0.88); }
 .input-row button:disabled { opacity: 0.4; }
+
 
 /* ============ ④ 回忆博物馆 ============ */
 .museum {
