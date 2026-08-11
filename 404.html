@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#fff7e6" />
+    <script>
+      (function () {
+        function setVh() {
+          var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+          document.documentElement.style.setProperty('--vh', h + 'px');
+        }
+        setVh();
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', setVh);
+          window.visualViewport.addEventListener('scroll', setVh);
+        } else {
+          window.addEventListener('resize', setVh);
+        }
+      })();
+    </script>
+    <title>我们的家 🏠</title>
+    <script type="module" crossorigin src="/jiangjiang-home-frontend/assets/index-0bEljTIH.js"></script>
+    <link rel="stylesheet" crossorigin href="/jiangjiang-home-frontend/assets/index-DJBifeaG.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
