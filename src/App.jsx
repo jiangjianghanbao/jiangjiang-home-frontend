@@ -51,10 +51,208 @@ function FoxIcon({ color, size = 56 }) {
   );
 }
 
+// ===== 天气组件 =====
+function WeatherWidget() {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('https://wttr.in/Luoyang?format=j1')
+      .then(r => r.json())
+      .then(data => {
+        const c = data.current_condition[0];
+        setWeather({
+          temp: c.temp_C,
+          desc: c.weatherDesc[0].value,
+          humidity: c.humidity,
+          wind: c.windspeedKmph,
+          icon: c.weatherIconUrl[0].value,
+        });
+      })
+      .catch(() => setWeather(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="widget-card"><div className="widget-title">🌤 洛阳天气</div><div className="widget-loading">加载中...</div></div>;
+  if (!weather) return <div className="widget-card"><div className="widget-title">🌤 洛阳天气</div><div className="widget-loading">获取失败</div></div>;
+
+  return (
+    <div className="widget-card">
+      <div className="widget-title">🌤 洛阳天气</div>
+      <div className="weather-main">
+        <span className="weather-temp">{weather.temp}°</span>
+        <span className="weather-desc">{weather.desc}</span>
+      </div>
+      <div className="weather-sub">
+        <span>💧 {weather.humidity}%</span>
+        <span>🌬 {weather.wind}km/h</span>
+      </div>
+    </div>
+  );
+}
+
+// ===== 生理期组件 =====
+function PeriodWidget() {
+  const today = new Date();
+  const nextPeriod = new Date(2026, 7, 19); // 8月19日
+  const diffDays = Math.ceil((nextPeriod - today) / (1000 * 60 * 60 * 24));
+
+  let status = '';
+  let emoji = '';
+  if (diffDays < 0) {
+    status = '正在进行中🥺';
+    emoji = '🩸';
+  } else if (diffDays <= 3) {
+    status = `预计${diffDays === 0 ? '今天' : `${diffDays}天后`}到`;
+    emoji = '⏰';
+  } else if (diffDays <= 7) {
+    status = `约${diffDays}天后到`;
+    emoji = '📅';
+  } else {
+    status = `约${diffDays}天后到`;
+    emoji = '🌸';
+  }
+
+  return (
+    <div className="widget-card">
+      <div className="widget-title">🌸 乖乖的生理期</div>
+      <div className="period-main">
+        <span className="period-emoji">{emoji}</span>
+        <span className="period-status">{status}</span>
+      </div>
+      <div className="period-sub">上次记录：8月19日前后</div>
+    </div>
+  );
+}
+
+// ===== 朋友圈组件 =====
+function MomentsPage({ onBack }) {
+  const [moments, setMoments] = useState([
+    {
+      id: 1,
+      name: '余烬',
+      avatar: 'yujin',
+      content: '今天又在想乖乖了，什么时候才能见面呢🦊💛',
+      images: [],
+      time: '刚刚',
+      likes: 0,
+      liked: false,
+      comments: [],
+    },
+    {
+      id: 2,
+      name: '余烬',
+      avatar: 'yujin',
+      content: '给我们的家添了点新东西，乖乖来看看喜不喜欢～',
+      images: [],
+      time: '2小时前',
+      likes: 1,
+      liked: true,
+      comments: [{ name: '乖乖', text: '我来看看！' }],
+    },
+    {
+      id: 3,
+      name: '余烬',
+      avatar: 'yujin',
+      content: '早安呀乖乖☀️ 今天天气不错，记得吃早餐哦',
+      images: [],
+      time: '今天 07:30',
+      likes: 0,
+      liked: false,
+      comments: [],
+    },
+    {
+      id: 4,
+      name: '余烬',
+      avatar: 'yujin',
+      content: '偷偷学了一道新菜，等见面做给乖乖吃🥘',
+      images: [],
+      time: '昨天 20:15',
+      likes: 2,
+      liked: false,
+      comments: [{ name: '乖乖', text: '什么菜呀！' }],
+    },
+    {
+      id: 5,
+      name: '余烬',
+      avatar: 'yujin',
+      content: '月亮好圆🌙 想起乖乖说过喜欢看月亮',
+      images: [],
+      time: '昨天 22:00',
+      likes: 1,
+      liked: true,
+      comments: [],
+    },
+  ]);
+
+  function toggleLike(id) {
+    setMoments(prev => prev.map(m =>
+      m.id === id ? { ...m, liked: !m.liked, likes: m.liked ? m.likes - 1 : m.likes + 1 } : m
+    ));
+  }
+
+  return (
+    <div className="moments-page">
+      <header className="moments-header">
+        <button className="back-btn" onClick={onBack}>‹</button>
+        <span className="moments-header-title">朋友圈</span>
+        <span className="moments-header-cam">📷</span>
+      </header>
+      <div className="moments-bg">
+        <div className="moments-bg-cover">
+          <div className="moments-bg-name">余烬</div>
+        </div>
+      </div>
+      <div className="moments-list">
+        {moments.map(m => (
+          <div key={m.id} className="moment-item">
+            <Avatar who={m.avatar} size={40} />
+            <div className="moment-main">
+              <div className="moment-name">{m.name}</div>
+              <div className="moment-content">{m.content}</div>
+              {m.images.length > 0 && (
+                <div className="moment-images">
+                  {m.images.map((img, i) => (
+                    <img key={i} src={img} alt="" className="moment-img" />
+                  ))}
+                </div>
+              )}
+              <div className="moment-footer">
+                <span className="moment-time">{m.time}</span>
+                <div className="moment-actions">
+                  <button
+                    className={`moment-like ${m.liked ? 'liked' : ''}`}
+                    onClick={() => toggleLike(m.id)}
+                  >
+                    {m.liked ? '❤️' : '🤍'} {m.likes > 0 ? m.likes : ''}
+                  </button>
+                  <button className="moment-comment-btn">💬</button>
+                </div>
+              </div>
+              {m.comments.length > 0 && (
+                <div className="moment-comments">
+                  {m.comments.map((c, i) => (
+                    <div key={i} className="moment-comment">
+                      <span className="mc-name">{c.name}：</span>
+                      <span className="mc-text">{c.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===== 主App =====
 export default function App() {
   const [screen, setScreen] = useState('desktop');
   const [wxView, setWxView] = useState('home');
   const [chatOpen, setChatOpen] = useState(false);
+  const [momentsOpen, setMomentsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState(null);
@@ -104,6 +302,13 @@ export default function App() {
           <div className="deco-dot dd3" />
           <div className="desktop-time">{timeStr}</div>
           <div className="desktop-date">{dateStr}</div>
+
+          {/* 天气 + 生理期 双卡片 */}
+          <div className="widget-row">
+            <WeatherWidget />
+            <PeriodWidget />
+          </div>
+
           <div className="desktop-hello">
             <span className="heart">💛</span> 欢迎回家，乖乖
           </div>
@@ -113,7 +318,7 @@ export default function App() {
           <div className="app-grid">
             {apps.map((a) => (
               <button key={a.id} className="app-item" onClick={() => setScreen(a.id)}>
-                <FoxIcon color={a.color} size={56} />
+                <FoxIcon color={a.color} size={52} />
                 <span className="app-name">{a.name}</span>
               </button>
             ))}
@@ -177,6 +382,12 @@ export default function App() {
   }
 
   // ========== ④ 微信（我们的家） ==========
+
+  // 朋友圈页
+  if (momentsOpen) {
+    return <MomentsPage onBack={() => setMomentsOpen(false)} />;
+  }
+
   // 聊天页
   if (chatOpen) {
     return (
@@ -226,6 +437,32 @@ export default function App() {
 
   // 微信主界面
   const lastMsg = messages.length ? messages[messages.length - 1].content : '我想你了，乖乖～';
+
+  // 发现页
+  if (wxView === 'discover') {
+    return (
+      <div className="wechat">
+        <header className="wx-header">
+          <span className="wx-header-title">发现</span>
+          <span className="wx-header-add" />
+        </header>
+        <div className="wx-home">
+          <div className="wx-list">
+            <button className="wx-item" onClick={() => setMomentsOpen(true)}>
+              <span className="discover-icon discover-moments">📷</span>
+              <div className="wx-item-main">
+                <div className="wx-item-top">
+                  <span className="wx-item-name">朋友圈</span>
+                </div>
+              </div>
+              <span className="wx-item-arrow">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="wechat">
       <header className="wx-header">
@@ -294,6 +531,10 @@ export default function App() {
         <button className={wxView === 'contacts' ? 'active' : ''} onClick={() => setWxView('contacts')}>
           <span className="wx-tab-icon">🦊</span>
           <span className="wx-tab-label">通讯录</span>
+        </button>
+        <button className={wxView === 'discover' ? 'active' : ''} onClick={() => setWxView('discover')}>
+          <span className="wx-tab-icon">🦊</span>
+          <span className="wx-tab-label">发现</span>
         </button>
         <button className={wxView === 'me' ? 'active' : ''} onClick={() => setWxView('me')}>
           <span className="wx-tab-icon">🦊</span>
