@@ -176,7 +176,7 @@ export default function App() {
           </div>
           <span className="chat-header-right">···</span>
         </header>
-        <div className="chat-area">
+        <div className="chat-area" style={{"--chat-bg": "url("+import.meta.env.BASE_URL+"chatbg/bg1.jpg)"}}>
           {messages.length === 0 && (
             <div className="chat-welcome">
               <Avatar who="yujin" size={64} />
