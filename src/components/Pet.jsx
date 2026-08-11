@@ -25,11 +25,19 @@ export default function Pet({ mood, onMoodChange }) {
     认真: '•̀ᴗ•́',
   };
 
+  const hints = {
+    开心: '开心',
+    生气: '哼！',
+    委屈: '委屈',
+    撒娇: '蹭蹭~',
+    认真: '思考中',
+  };
+
   return (
     <div className={`pet ${bounce % 2 ? 'bounce' : ''}`} onClick={handleTap} title="戳我一下">
-      <div className="pet-face">{faces[mood] || faces.开心}</div>
       <div className="pet-tail">🦊</div>
-      <div className="pet-hint">{mood}</div>
+      <div className="pet-face">{faces[mood] || faces.开心}</div>
+      <div className="pet-hint">{hints[mood] || mood}</div>
     </div>
   );
 }
