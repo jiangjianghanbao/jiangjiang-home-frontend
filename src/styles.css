@@ -21,7 +21,6 @@
 }
 
 html, body, #root {
-  height: 100%;
   width: 100%;
   -webkit-tap-highlight-color: transparent;
 }
@@ -40,8 +39,7 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ============ 微信容器 ============ */
 .wechat-full {
-  min-height: 100dvh;
-  height: 100%;
+  height: 100vh;
   width: 100%;
   max-width: 100%;
   min-width: 100%;
@@ -84,7 +82,6 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ============ ① 桌面 ============ */
 .desktop {
-  height: 100%;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #faf5eb 0%, #f5efe4 100%);
@@ -214,7 +211,6 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ============ ② 微信 ============ */
 .wechat {
-  height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -319,10 +315,6 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ===== 微信底部tab ===== */
 .wx-tab {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   background: rgba(255,255,255,0.88);
   backdrop-filter: blur(20px);
@@ -376,7 +368,7 @@ input { font-family: inherit; border: none; outline: none; }
 .chat-area {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 12px 84px;
+  padding: 14px 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -477,10 +469,7 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ===== 输入区 - 固定在底部 ===== */
 .input-row {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  margin-top: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -736,7 +725,6 @@ input { font-family: inherit; border: none; outline: none; }
 
 /* ============ ⑦ 朋友圈 ============ */
 .moments-page {
-  height: 100%;
   display: flex;
   flex-direction: column;
   background: #f0ece6;
