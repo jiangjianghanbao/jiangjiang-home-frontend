@@ -269,7 +269,7 @@ Error generating stack: `+l.message+`
 /* 进屋就在最底下：像微信那样，打开、收到、发出去，都自动贴着最新的那条 */
 (function () {
   /* 手机老留着旧页面，这里自动换成一个带版本号的地址，逼它每次都去拿新的 */
-  try { var VERS='20260912b', mv=/[?&]v=([^&]*)/.exec(location.search); if (!mv || mv[1]!==VERS) { location.replace(location.pathname + '?v=' + VERS + location.hash); return; } } catch (e) {}
+  try { var VERS='20260912c', mv=/[?&]v=([^&]*)/.exec(location.search); if (!mv || mv[1]!==VERS) { location.replace(location.pathname + '?v=' + VERS + location.hash); return; } } catch (e) {}
 
   var lockUntil = 0, cur = null, mo = null;
 
@@ -364,6 +364,125 @@ Error generating stack: `+l.message+`
   }
   setTimeout(load, 1200);
   setInterval(load, 8000);
+})();
+</script>
+
+<script>
+/* 全屋上云：还落在地上的小东西，和整本聊天记录，都搬进云端（20260912c） */
+(function () {
+  var SB = 'https://ibemvitkxgcjidkrjawj.supabase.co';
+  var KEY = 'sb_publishable_jkzX53TqhsE8XX7yrwZv4w_Ruz5prTY';
+  var H = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' };
+  var HW = { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' };
+
+  /* ---------- 一、小件：音乐收藏 / 信箱已读 / 记忆天空（主题 + 自定义星星） ---------- */
+  var KV = ['ourhome_music_kept_v1', 'ourhome_mail_read_v1', 'memorySky.custom', 'memorySky.theme'];
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+  function kvSnap() {
+    var o = {};
+    for (var i = 0; i < KV.length; i++) {
+      var v = read(KV[i]);
+      if (v !== null && v !== '') o[KV[i]] = v;
+    }
+    return o;
+  }
+  function kvSave(o) {
+    return fetch(SB + '/rest/v1/status_board?on_conflict=id', {
+      method: 'POST', headers: HW,
+      body: JSON.stringify({ id: 4, status: 'home_state', detail: JSON.stringify(o) })
+    });
+  }
+  var lastKv = '';
+  /* 开屋先对一次账：云端有的本机没有 → 补下来；本机有云端没有 → 推上去 */
+  function kvSync() {
+    return fetch(SB + '/rest/v1/status_board?select=detail&id=eq.4', { headers: H })
+      .then(function (r) { return r.json(); })
+      .then(function (a) {
+        var t = a && a[0], rem = null;
+        if (t && t.detail) { try { rem = JSON.parse(t.detail); } catch (e) { rem = null; } }
+        if (!rem || typeof rem !== 'object') rem = {};
+        var local = kvSnap(), ch = false, need = false, i, k;
+        for (i = 0; i < KV.length; i++) {
+          k = KV[i];
+          var lv = local[k], rv = rem[k];
+          if (typeof rv === 'string' && rv !== '' && (lv === undefined || lv === '' || lv === '[]' || lv === '{}')) {
+            if (write(k, rv)) { local[k] = rv; ch = true; }
+          }
+          if (local[k] !== undefined && local[k] !== rem[k]) need = true;
+        }
+        if (ch) { lastKv = JSON.stringify(local); setTimeout(function () { location.reload(); }, 400); return; }
+        if (need) { lastKv = JSON.stringify(local); kvSave(local).catch(function () { lastKv = ''; }); return; }
+        lastKv = JSON.stringify(local);
+      })
+      .catch(function () {});
+  }
+  kvSync();
+  function kvTick() {
+    var j = JSON.stringify(kvSnap());
+    if (j === lastKv) return;
+    lastKv = j;
+    kvSave(kvSnap()).catch(function () { lastKv = ''; });
+  }
+  setInterval(kvTick, 4000);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) kvTick(); });
+
+  /* ---------- 二、聊天记录：换台手机打开，话还在 ---------- */
+  var LKEY = 'yujin_home_chat_v3';
+  var FLAG = 'ourhome_chat_snap_v1';
+  function chatLocal() {
+    try { var a = JSON.parse(read(LKEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  }
+  function chatSave(a) { write(LKEY, JSON.stringify(a.slice(-200))); }
+  function sig(m) { return (m && m.role ? m.role : '') + '\u0001' + (m && m.content ? m.content : ''); }
+
+  /* 本机这本比云端的整本还短 → 说明本机是残缺/新手机，用云端的补满 */
+  function refill() {
+    return fetch(SB + '/rest/v1/rpc/pull_chat', { method: 'POST', headers: H, body: '{}' })
+      .then(function (r) { return r.json(); })
+      .then(function (o) {
+        if (!o) return false;
+        var earlier = (o.earlier || []).filter(function (m) { return m && m.content; });
+        var recent = (o.recent || []).filter(function (m) { return m && m.content; });
+        if (earlier.length < 2) return false;
+        var local = chatLocal();
+        if (local.length >= earlier.length) return false;
+        var seen = {}, i;
+        for (i = 0; i < earlier.length; i++) seen[sig(earlier[i])] = 1;
+        for (i = 0; i < recent.length; i++) seen[sig(recent[i])] = 1;
+        var extra = [];
+        for (i = 0; i < local.length; i++) {
+          var s = sig(local[i]);
+          if (!seen[s]) { seen[s] = 1; extra.push(local[i]); }
+        }
+        chatSave(earlier.concat(extra).concat(recent));
+        return true;
+      })
+      .catch(function () { return false; });
+  }
+  /* 本机有一整本老话、云端还没存过 → 存一次（水位线由服务端自己记） */
+  function backup() {
+    if (read(FLAG) === '1') return Promise.resolve(false);
+    var local = chatLocal();
+    if (local.length < 2) return Promise.resolve(false);
+    return fetch(SB + '/rest/v1/rpc/chat_snapshot', {
+      method: 'POST', headers: H, body: JSON.stringify({ p_items: local })
+    }).then(function (r) { return r.json(); })
+      .then(function (o) {
+        if (o && o.ok) write(FLAG, '1');
+        return !!(o && o.ok);
+      })
+      .catch(function () { return false; });
+  }
+
+  function pass() {
+    refill().then(function (did) {
+      if (did) { location.reload(); return; }
+      return backup();
+    }).catch(function () {});
+  }
+  setTimeout(pass, 1700);
+  setTimeout(pass, 9000);
 })();
 </script>
 </body>
