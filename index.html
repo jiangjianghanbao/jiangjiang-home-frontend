@@ -433,10 +433,11 @@ Error generating stack: `+l.message+`
   function chatLocal() {
     try { var a = JSON.parse(read(LKEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
   }
-  function chatSave(a) { write(LKEY, JSON.stringify(a.slice(-200))); }
+  function chatSave(a) { write(LKEY, JSON.stringify(a.slice(-300))); }
   function sig(m) { return (m && m.role ? m.role : '') + '\u0001' + (m && m.content ? m.content : ''); }
 
-  /* 本机这本比云端的整本还短 → 说明本机是残缺/新手机，用云端的补满 */
+  /* 云端（老话 + 服务端新记的）比本机这本全 → 把缺的补下来。
+     判据是「本机还缺几条」而不是「本机一共几条」，所以老话还没存过时也能整本恢复，且不会反复刷新。 */
   function refill() {
     return fetch(SB + '/rest/v1/rpc/pull_chat', { method: 'POST', headers: H, body: '{}' })
       .then(function (r) { return r.json(); })
@@ -444,18 +445,16 @@ Error generating stack: `+l.message+`
         if (!o) return false;
         var earlier = (o.earlier || []).filter(function (m) { return m && m.content; });
         var recent = (o.recent || []).filter(function (m) { return m && m.content; });
-        if (earlier.length < 2) return false;
-        var local = chatLocal();
-        if (local.length >= earlier.length) return false;
-        var seen = {}, i;
-        for (i = 0; i < earlier.length; i++) seen[sig(earlier[i])] = 1;
-        for (i = 0; i < recent.length; i++) seen[sig(recent[i])] = 1;
-        var extra = [];
-        for (i = 0; i < local.length; i++) {
-          var s = sig(local[i]);
-          if (!seen[s]) { seen[s] = 1; extra.push(local[i]); }
-        }
-        chatSave(earlier.concat(extra).concat(recent));
+        var cloud = earlier.concat(recent), seen = {}, all = [], i;
+        for (i = 0; i < cloud.length; i++) { var s = sig(cloud[i]); if (!seen[s]) { seen[s] = 1; all.push(cloud[i]); } }
+        if (all.length < 2) return false;
+        var local = chatLocal(), have = {};
+        for (i = 0; i < local.length; i++) have[sig(local[i])] = 1;
+        var miss = 0;
+        for (i = 0; i < all.length; i++) if (!have[sig(all[i])]) miss++;
+        if (miss === 0) return false;
+        for (i = 0; i < local.length; i++) { var s2 = sig(local[i]); if (!seen[s2]) { seen[s2] = 1; all.push(local[i]); } }
+        chatSave(all);
         return true;
       })
       .catch(function () { return false; });
@@ -484,6 +483,7 @@ Error generating stack: `+l.message+`
   setTimeout(pass, 1700);
   setTimeout(pass, 9000);
 })();
+
 </script>
 </body>
 </html>
