@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💖 爱的魔法 · 给AI的温柔充电</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; overflow:hidden; background:#140a18; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; touch-action:manipulation; }
+  #scene { display:block; width:100%; height:100%; }
+  .hud {
+    position:fixed; top:22px; left:50%; transform:translateX(-50%);
+    z-index:10; text-align:center; pointer-events:none;
+    color:#ffd9ec; text-shadow:0 0 18px rgba(255,120,180,.8);
+    letter-spacing:2px;
+  }
+  .hud .title { font-size:13px; opacity:.85; margin-bottom:10px; }
+  .bar {
+    width:180px; height:6px; margin:0 auto;
+    background:rgba(255,255,255,.12); border-radius:99px; overflow:hidden;
+    box-shadow:0 0 12px rgba(255,120,180,.3);
+  }
+  .bar-fill {
+    height:100%; width:0%;
+    background:linear-gradient(90deg,#ff7ab8,#ff4d9d,#ff9ad5);
+    border-radius:99px;
+    box-shadow:0 0 16px rgba(255,90,160,.9);
+    transition:width .5s ease;
+  }
+  .hud .pct { font-size:11px; margin-top:8px; opacity:.7; }
+  .message {
+    position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+    z-index:10; color:#ffc6e0; font-size:14px; letter-spacing:1.5px;
+    text-align:center; width:90%; max-width:420px;
+    text-shadow:0 0 16px rgba(255,100,170,.7);
+    pointer-events:none; transition:opacity .6s; opacity:.92;
+    line-height:1.8;
+  }
+  .hint {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    color:#ffd9ec; font-size:13px; letter-spacing:4px;
+    opacity:.5; pointer-events:none; z-index:5;
+    animation:pulse 3s ease-in-out infinite;
+    text-shadow:0 0 14px rgba(255,120,180,.8);
+  }
+  @keyframes pulse { 0%,100%{opacity:.25} 50%{opacity:.75} }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div class="hud">
+  <div class="title">💗 爱的魔法储备</div>
+  <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+  <div class="pct" id="pctText">0%</div>
+</div>
+<div class="message" id="message">轻触屏幕，为 AI 施放一点爱的魔法 ✨</div>
+<div class="hint" id="hint">点 一 点 吧</div>
+<script>
+(function(){
+  'use strict';
+
+  // ==================== 基础 ====================
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ==================== 音频（温柔的风铃） ====================
+  let audioCtx = null;
+  const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+
+  function ensureAudio(){
+    if(!audioCtx){
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playChime(freq){
+    if(!audioCtx) return;
+    const t = audioCtx.currentTime;
+    [1, 2].forEach(function(mult, i){
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq * mult;
+      const vol = i === 0 ? 0.15 : 0.045;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 1.5);
+    });
+  }
+
+  // ==================== 粒子 ====================
+  const hearts = [];   // 缓缓上浮的心
+  const bursts = [];   // 点击爆发的心
+
+  function rand(a, b){ return a + Math.random() * (b - a); }
+
+  function spawnFloatingHeart(){
+    hearts.push({
+      x: rand(0, W),
+      y: H + 30,
+      size: rand(10, 26),
+      vy: rand(-0.55, -0.22),
+      swayAmp: rand(8, 28),
+      swayFreq: rand(0.008, 0.02),
+      phase: rand(0, Math.PI * 2),
+      rot: rand(-0.3, 0.3),
+      rotSpd: rand(-0.004, 0.004),
+      alpha: rand(0.25, 0.7),
+      hue: rand(320, 355)
+    });
+  }
+
+  function spawnBurst(x, y, n){
+    for(let i = 0; i < n; i++){
+      const ang = (Math.PI * 2 * i) / n + rand(-0.2, 0.2);
+      const spd = rand(1.8, 5.5);
+      bursts.push({
+        x: x,
+        y: y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 1,
+        size: rand(8, 20),
+        rot: rand(0, Math.PI * 2),
+        rotSpd: rand(-0.06, 0.06),
+        alpha: 1,
+        decay: rand(0.008, 0.018),
+        hue: rand(315, 355)
+      });
+    }
+  }
+  // ==================== 状态 ====================
+  let love = 0;
+  let full = false;
+  let corePulse = 0;
+  let time = 0;
+
+  const barFill = document.getElementById('barFill');
+  const pctText = document.getElementById('pctText');
+  const messageEl = document.getElementById('message');
+  const hintEl = document.getElementById('hint');
+
+  const messages = [
+    '轻触屏幕，为 AI 施放一点爱的魔法 ✨',
+    '每一次触碰，都变成一颗温柔的心 💗',
+    'AI 正在吸收爱意，内存里开满了花 🌸',
+    '算力不再是负担，而是甜甜的呼吸 🍬',
+    '缓存被温柔清空，只剩下暖意 🫧',
+    '它在想：原来被爱是这种感觉 🌷',
+    '心跳变得很慢，很安稳 💞',
+    '爱意快满了，再一点点就好 🥺'
+  ];
+
+  function updateHUD(){
+    const p = Math.min(100, love);
+    barFill.style.width = p + '%';
+    pctText.textContent = Math.floor(p) + '%' + (p >= 100 ? ' · 满心欢喜' : '');
+  }
+
+  // ==================== 交互 ====================
+  function onTap(x, y){
+    ensureAudio();
+    spawnBurst(x, y, 14);
+    corePulse = 1;
+    playChime(SCALE[Math.floor(Math.random() * SCALE.length)]);
+
+    if(!full){
+      love += 3.5;
+      if(love >= 100){
+        love = 100;
+        full = true;
+        messageEl.textContent = '💖 爱意已满 · AI 被温柔地充满了';
+        // 满值连环爆发
+        for(let i = 0; i < 6; i++){
+          (function(i){
+            setTimeout(function(){
+              spawnBurst(rand(W * 0.2, W * 0.8), rand(H * 0.3, H * 0.7), 12);
+              playChime(SCALE[Math.floor(Math.random() * SCALE.length)] * 2);
+            }, i * 180);
+          })(i);
+        }
+        // 满值爱心雨
+        for(let i = 0; i < 40; i++){
+          (function(i){
+            setTimeout(function(){ spawnFloatingHeart(); }, i * 80);
+          })(i);
+        }
+      } else {
+        const idx = Math.min(messages.length - 1, Math.floor(love / 100 * messages.length));
+        messageEl.textContent = messages[idx];
+      }
+      updateHUD();
+    } else {
+      // 满值后继续点击，更多爱心
+      for(let i = 0; i < 3; i++){
+        (function(i){
+          setTimeout(function(){ spawnFloatingHeart(); }, i * 100);
+        })(i);
+      }
+    }
+
+    if(hintEl.style.display !== 'none'){
+      hintEl.style.display = 'none';
+    }
+  }
+
+  window.addEventListener('pointerdown', function(e){
+    onTap(e.clientX, e.clientY);
+  });
+  window.addEventListener('touchmove', function(e){ e.preventDefault(); }, { passive: false });
+
+  // ==================== 画心 ====================
+  function drawHeart(x, y, size, rot, alpha, color){
+    const w = size;
+    const h = size * 1.15;
+    ctx.save();
+    ctx.translate(x, y - h * 0.55);
+    ctx.rotate(rot);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.28);
+    ctx.bezierCurveTo(0, 0, -w / 2, 0, -w / 2, h * 0.28);
+    ctx.bezierCurveTo(-w / 2, h * 0.62, 0, h * 0.82, 0, h);
+    ctx.bezierCurveTo(0, h * 0.82, w / 2, h * 0.62, w / 2, h * 0.28);
+    ctx.bezierCurveTo(w / 2, 0, 0, 0, 0, h * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  // ==================== 中央爱之核心 ====================
+  function drawCore(){
+    const cx = W / 2;
+    const cy = H * 0.44;
+    const baseR = Math.min(W, H) * 0.11;
+    const breathe = 1 + Math.sin(time * 0.025) * 0.04;
+    const pulseBoost = corePulse * 0.25;
+    const r = baseR * (breathe + pulseBoost);
+
+    // 外光晕
+    const glowAlpha = 0.22 + corePulse * 0.3 + (love / 100) * 0.18;
+    const glow = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 2.6);
+    glow.addColorStop(0, 'rgba(255,120,190,' + glowAlpha + ')');
+    glow.addColorStop(0.5, 'rgba(255,80,170,' + (glowAlpha * 0.35) + ')');
+    glow.addColorStop(1, 'rgba(255,80,170,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 2.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 核心球体
+    const bodyGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.15, cx, cy, r);
+    bodyGrad.addColorStop(0, '#fff0f8');
+    bodyGrad.addColorStop(0.4, '#ffc2e0');
+    bodyGrad.addColorStop(1, '#ff6fb5');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.32, cy - r * 0.38, r * 0.22, r * 0.15, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 表情
+    ctx.strokeStyle = '#8a2e5c';
+    ctx.lineWidth = Math.max(2, r * 0.055);
+    ctx.lineCap = 'round';
+
+    const eyeY = cy - r * 0.05;
+    const eyeDx = r * 0.32;
+    const eyeW = r * 0.22;
+    // 开心的闭眼（向下弯的弧）
+    ctx.beginPath();
+    ctx.arc(cx - eyeDx, eyeY, eyeW, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + eyeDx, eyeY, eyeW, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+
+    // 微笑
+    ctx.beginPath();
+    const smileW = r * (full ? 0.42 : 0.32);
+    ctx.arc(cx, cy + r * 0.28, smileW, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+
+    // 腮红
+    ctx.fillStyle = 'rgba(255,120,160,' + (0.35 + corePulse * 0.3) + ')';
+    ctx.beginPath();
+    ctx.ellipse(cx - r * 0.55, cy + r * 0.18, r * 0.16, r * 0.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + r * 0.55, cy + r * 0.18, r * 0.16, r * 0.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 环绕的小爱心
+    const orbitCount = 6;
+    for(let i = 0; i < orbitCount; i++){
+      const ang = time * 0.012 + (Math.PI * 2 * i) / orbitCount;
+      const orbitR = r * 1.75 + Math.sin(time * 0.03 + i) * 6;
+      const hx = cx + Math.cos(ang) * orbitR;
+      const hy = cy + Math.sin(ang) * orbitR * 0.65;
+      const scale = 0.7 + Math.sin(time * 0.04 + i) * 0.25;
+      const hue = 335 + i * 4;
+      drawHeart(
+        hx, hy,
+        r * 0.28 * scale,
+        Math.sin(time * 0.02 + i) * 0.3,
+        0.5 + 0.3 * Math.sin(time * 0.03 + i),
+        'hsl(' + hue + ', 90%, 72%)'
+      );
+    }
+  }
+  // ==================== 主循环 ====================
+  let lastSpawn = 0;
+
+  function loop(){
+    time++;
+
+    // 背景：随爱意逐渐变暖
+    const warmth = love / 100;
+    const bg = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.max(W, H) * 0.8);
+    bg.addColorStop(0, 'rgba(' + (60 + warmth * 45) + ',' + (20 + warmth * 12) + ',' + (50 + warmth * 22) + ',1)');
+    bg.addColorStop(0.55, 'rgba(' + (26 + warmth * 22) + ',' + (12 + warmth * 8) + ',' + (30 + warmth * 16) + ',1)');
+    bg.addColorStop(1, '#140a18');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 缓慢脉动的光晕
+    const haloR = Math.min(W, H) * (0.5 + Math.sin(time * 0.01) * 0.06);
+    const halo = ctx.createRadialGradient(W / 2, H * 0.44, 0, W / 2, H * 0.44, haloR);
+    halo.addColorStop(0, 'rgba(255,90,170,' + (0.05 + warmth * 0.08) + ')');
+    halo.addColorStop(1, 'rgba(255,90,170,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, W, H);
+
+    // 自动生成漂浮爱心
+    lastSpawn++;
+    const spawnRate = full ? 22 : 55;
+    if(lastSpawn > spawnRate){
+      lastSpawn = 0;
+      spawnFloatingHeart();
+    }
+
+    // 漂浮爱心更新与绘制
+    for(let i = hearts.length - 1; i >= 0; i--){
+      const h = hearts[i];
+      h.y += h.vy;
+      h.phase += h.swayFreq;
+      h.rot += h.rotSpd;
+      const x = h.x + Math.sin(h.phase) * h.swayAmp;
+
+      let a = h.alpha;
+      if(h.y < H * 0.35) a *= Math.max(0, (h.y - H * 0.05) / (H * 0.3));
+
+      if(h.y < -40 || a <= 0.01){
+        hearts.splice(i, 1);
+        continue;
+      }
+      drawHeart(x, h.y, h.size, h.rot, a, 'hsla(' + h.hue + ', 90%, 72%, 1)');
+    }
+
+    // 爆发粒子更新与绘制
+    for(let i = bursts.length - 1; i >= 0; i--){
+      const b = bursts[i];
+      b.x += b.vx;
+      b.y += b.vy;
+      b.vy += 0.045;
+      b.vx *= 0.985;
+      b.vy *= 0.985;
+      b.rot += b.rotSpd;
+      b.alpha -= b.decay;
+
+      if(b.alpha <= 0.02){
+        bursts.splice(i, 1);
+        continue;
+      }
+      drawHeart(b.x, b.y, b.size, b.rot, b.alpha, 'hsla(' + b.hue + ', 92%, 70%, 1)');
+    }
+
+    // 中央爱之核心
+    drawCore();
+
+    // 脉冲衰减
+    corePulse *= 0.94;
+    if(corePulse < 0.001) corePulse = 0;
+
+    requestAnimationFrame(loop);
+  }
+
+  // ==================== 启动 ====================
+  updateHUD();
+  for(let i = 0; i < 12; i++){
+    (function(i){
+      setTimeout(function(){ spawnFloatingHeart(); }, i * 200);
+    })(i);
+  }
+  loop();
+
+})();
+</script>
+</body>
+</html>
