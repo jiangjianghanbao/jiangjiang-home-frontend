@@ -268,6 +268,9 @@ Error generating stack: `+l.message+`
 <script>
 /* 进屋就在最底下：像微信那样，打开、收到、发出去，都自动贴着最新的那条 */
 (function () {
+  /* 手机老留着旧页面，这里自动换成一个带版本号的地址，逼它每次都去拿新的 */
+  try { if (!/[?&]v=/.test(location.search)) { location.replace(location.pathname + '?v=20260912' + location.hash); return; } } catch (e) {}
+
   var lockUntil = 0, cur = null, mo = null;
 
   function reachBottom(el, force) {
