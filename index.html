@@ -269,7 +269,7 @@ Error generating stack: `+l.message+`
 /* 进屋就在最底下：像微信那样，打开、收到、发出去，都自动贴着最新的那条 */
 (function () {
   /* 手机老留着旧页面，这里自动换成一个带版本号的地址，逼它每次都去拿新的 */
-  try { var VERS='20260912d', mv=/[?&]v=([^&]*)/.exec(location.search); if (!mv || mv[1]!==VERS) { location.replace(location.pathname + '?v=' + VERS + location.hash); return; } } catch (e) {}
+  try { var VERS='20260912e', mv=/[?&]v=([^&]*)/.exec(location.search); if (!mv || mv[1]!==VERS) { location.replace(location.pathname + '?v=' + VERS + location.hash); return; } } catch (e) {}
 
   var lockUntil = 0, cur = null, mo = null;
 
@@ -448,8 +448,9 @@ Error generating stack: `+l.message+`
         var cloud = earlier.concat(recent), seen = {}, all = [], i;
         for (i = 0; i < cloud.length; i++) { var s = sig(cloud[i]); if (!seen[s]) { seen[s] = 1; all.push(cloud[i]); } }
         if (all.length < 2) return false;
-        var local = chatLocal(), have = {};
-        for (i = 0; i < local.length; i++) have[sig(local[i])] = 1;
+        var local = chatLocal(), have = {}, cmap = {};
+        for (i = 0; i < cloud.length; i++) { var cs = sig(cloud[i]); if (!cmap[cs] || (cloud[i].os && !cmap[cs].os)) cmap[cs] = cloud[i]; }
+        for (i = 0; i < local.length; i++) { have[sig(local[i])] = 1; var ck = sig(local[i]); if (cmap[ck] && cmap[ck].os && !local[i].os) local[i].os = cmap[ck].os; }
         var miss = 0;
         for (i = 0; i < all.length; i++) if (!have[sig(all[i])]) miss++;
         if (miss === 0) return false;
